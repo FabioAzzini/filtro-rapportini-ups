@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1e3a8a">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <title>Filtro Rapportini UPS</title>
 <style>
 :root{--blue:#1e3a8a;--indigo:#4f46e5;--violet:#6366f1;--mid:#e0e7ff;--pale:#eef2ff;--line:#c7d2fe;--text:#0f172a;--muted:#475569;--bg:#f5f7fb;--white:#fff;}
@@ -24,7 +26,7 @@ input[type=file]{display:none}.fileline{display:flex;gap:8px;align-items:center;
 <header class="no-print"><div class="hrow"><img id="headerLogo" class="logo" alt="Lorenzi Elettronica"><div class="title">Filtro Rapportini UPS<small>Seleziona e consulta le apparecchiature del rapportino originale</small></div></div></header>
 <main>
 <section class="toolbar no-print">
- <div class="fileline"><label class="btn primary" for="file">📂 Carica rapportino HTML</label><input id="file" type="file" accept=".html,text/html"><span id="filename" class="filename">Nessun file caricato</span><button class="btn" id="clearBtn" type="button">🗑 Azzera</button></div>
+ <div class="fileline"><label class="btn primary" for="file">📂 Carica rapportino HTML</label><input id="file" type="file" accept=".html,text/html"><span id="filename" class="filename">Nessun file caricato</span><button class="btn" id="installBtn" type="button" style="display:none">📲 Installa app</button><button class="btn" id="clearBtn" type="button">🗑 Azzera</button></div>
  <div class="hint">Il file viene letto direttamente sul dispositivo. Non viene caricato su internet.</div>
  <div id="global" style="display:none"></div>
  <input id="search" class="search" placeholder="🔎 Cerca cliente, posizione, modello, matricola, batteria..." autocomplete="off" style="display:none">
@@ -94,5 +96,11 @@ $('file').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)re
 $('search').addEventListener('input',render);$('allBtn').addEventListener('click',()=>{state.selected=new Set(state.ups.map(u=>String(u.id)));render();});$('noneBtn').addEventListener('click',()=>{state.selected.clear();render();});
 $('printBtn').addEventListener('click',()=>{if(!state.selected.size){alert('Seleziona almeno un UPS.');return;}window.print();});
 $('clearBtn').addEventListener('click',()=>{state={data:null,ups:[],selected:new Set(),fileName:''};$('filename').textContent='Nessun file caricato';$('search').style.display='none';$('stats').style.display='none';$('actions').style.display='none';$('list').innerHTML='';$('reports').innerHTML='';$('empty').style.display='block';$('file').value='';});
+let deferredInstallPrompt=null;
+const installBtn=$('installBtn');
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event;installBtn.style.display='inline-flex';});
+installBtn.addEventListener('click',async()=>{if(!deferredInstallPrompt)return;deferredInstallPrompt.prompt();await deferredInstallPrompt.userChoice;deferredInstallPrompt=null;installBtn.style.display='none';});
+window.addEventListener('appinstalled',()=>{installBtn.style.display='none';deferredInstallPrompt=null;});
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
 </script>
 </body></html>

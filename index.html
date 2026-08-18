@@ -1,0 +1,39 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Filtro Rapportini UPS</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#172033;background:#f4f6f9}*{box-sizing:border-box}body{margin:0}.app{max-width:1100px;margin:auto;padding:18px}
+header{background:#173c91;color:white;border-radius:14px;padding:18px 20px;margin-bottom:14px}h1{margin:0;font-size:23px}header p{margin:6px 0 0;opacity:.85}
+.panel{background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 10px #00000010}.actions{display:flex;gap:10px;flex-wrap:wrap}
+button,.filelabel{border:0;border-radius:10px;padding:11px 15px;font-weight:700;cursor:pointer;background:#173c91;color:white}.filelabel input{display:none}.secondary{background:#e8edf7;color:#173c91}
+.search{width:100%;font-size:17px;padding:13px;border:1px solid #ccd3df;border-radius:10px}.meta{color:#64748b;font-size:13px}.summary{font-weight:700;margin:10px 0}
+.card{border:1px solid #d6dce6;border-radius:12px;padding:13px;margin:9px 0;background:#fbfcfe}.card.selected{border:2px solid #173c91;background:#f4f7ff}
+.head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.title{font-size:17px;font-weight:800;color:#173c91}.pos{font-size:13px;color:#64748b;margin-top:3px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:11px}.box{background:#eef2f7;border-radius:8px;padding:8px}.box small{display:block;color:#64748b;font-size:10px;font-weight:700}.box b{display:block;margin-top:3px}
+input[type=checkbox]{width:19px;height:19px}.empty{text-align:center;color:#64748b;padding:35px 10px}@media(max-width:700px){.grid{grid-template-columns:1fr 1fr}.app{padding:10px}}@media(max-width:460px){.grid{grid-template-columns:1fr}.head{display:block}}
+</style></head><body><div class="app">
+<header><h1>🔎 Filtro Rapportini UPS</h1><p>Carica un rapportino HTML e trova rapidamente l'UPS che ti interessa.</p></header>
+<div class="panel"><div class="actions"><label class="filelabel">📂 Carica rapportino HTML<input id="file" type="file" accept=".html,.htm,text/html"></label><button class="secondary" id="all">☑ Seleziona tutto</button><button class="secondary" id="none">☐ Deseleziona tutto</button></div><div id="info" class="meta" style="margin-top:12px">Nessun rapportino caricato.</div></div>
+<div class="panel" id="searchPanel" style="display:none"><input id="search" class="search" placeholder="🔎 Cerca cliente, posizione, modello, matricola, potenza, batteria..."><div id="summary" class="summary"></div><div id="list"></div></div>
+</div>
+<script>
+let data=[],selected=new Set(),client="",fileName="";
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const val=(D,k,id)=>D[k+"_"+id]??"";
+function parseReport(text){
+ const doc=new DOMParser().parseFromString(text,"text/html"),node=doc.querySelector("#__saved_data__");
+ if(!node)throw new Error("Il file non contiene il blocco dati __saved_data__.");
+ let D;try{D=JSON.parse(node.textContent||node.innerHTML||"")}catch(e){throw new Error("Dati del rapportino non leggibili.")}
+ const ids=[...new Set(Object.keys(D).map(k=>{const m=k.match(/^u_mod_(.+)$/);return m?m[1]:null}).filter(Boolean))];
+ if(!ids.length)throw new Error("Nel rapportino non sono presenti UPS.");
+ client=D.cliente||D.nome_cliente||D.client||D.ragione_sociale||"";
+ return ids.map((id,i)=>({id,n:i+1,location:val(D,"u_loc",id),model:val(D,"u_mod",id),serial:val(D,"u_sn",id),power:val(D,"u_kva",id),mis:val(D,"u_mis",id),bypass:val(D,"u_vcb",id),batteryCount:val(D,"u_nbatt",id),batteryType:val(D,"u_tipobatt",id),batteryDate:val(D,"u_dbatt2",id),material:val(D,"u_materiale_sostituito",id)||val(D,"u_material",id),load:val(D,"u_carico",id)}));
+}
+function render(){
+ const q=document.getElementById("search").value.trim().toLowerCase(),f=data.filter(u=>[client,fileName,u.location,u.model,u.serial,u.power,u.mis,u.bypass,u.batteryCount,u.batteryType,u.batteryDate,u.material,u.load].join(" ").toLowerCase().includes(q));
+ document.getElementById("summary").textContent=`${f.length} UPS visualizzati su ${data.length} · ${selected.size} selezionati`;
+ document.getElementById("list").innerHTML=f.length?f.map(u=>`<div class="card ${selected.has(u.id)?"selected":""}"><div class="head"><div><div class="title">⚡ UPS ${u.n} · ${esc(u.model||"Modello non indicato")}</div><div class="pos">📍 ${esc(u.location||"Posizione non indicata")}</div></div><input type="checkbox" ${selected.has(u.id)?"checked":""} data-id="${esc(u.id)}"></div><div class="grid">
+<div class="box"><small>Matricola</small><b>${esc(u.serial||"—")}</b></div><div class="box"><small>Potenza</small><b>${esc(u.power||"—")}</b></div><div class="box"><small>M.I.S.</small><b>${esc(u.mis||"—")}</b></div><div class="box"><small>By Pass esterno</small><b>${esc(u.bypass||"—")}</b></div><div class="box"><small>Batterie</small><b>${esc(u.batteryCount||"—")}</b></div><div class="box"><small>Tipo / Marca batteria</small><b>${esc(u.batteryType||"—")}</b></div><div class="box"><small>Installazione batterie</small><b>${esc(u.batteryDate||"—")}</b></div><div class="box"><small>Materiale sostituito</small><b>${esc(u.material||"—")}</b></div><div class="box"><small>Carico</small><b>${esc(u.load||"—")}</b></div></div></div>`).join(""):'<div class="empty">Nessun UPS corrisponde alla ricerca.</div>';
+ document.querySelectorAll('input[data-id]').forEach(el=>el.onchange=()=>{el.checked?selected.add(el.dataset.id):selected.delete(el.dataset.id);render()});
+}
+document.getElementById("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{data=parseReport(await f.text());fileName=f.name;selected=new Set(data.map(x=>x.id));document.getElementById("searchPanel").style.display="block";document.getElementById("info").textContent=`${f.name} · ${data.length} UPS trovati${client?" · Cliente: "+client:""}`;document.getElementById("search").value="";render()}catch(err){document.getElementById("searchPanel").style.display="none";document.getElementById("info").textContent="⚠️ "+err.message}};
+document.getElementById("search").oninput=render;document.getElementById("all").onclick=()=>{selected=new Set(data.map(x=>x.id));render()};document.getElementById("none").onclick=()=>{selected.clear();render()};
+</script></body></html>

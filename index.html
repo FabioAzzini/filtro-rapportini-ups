@@ -24,7 +24,7 @@ input[type=file]{display:none}.fileline{display:flex;gap:8px;align-items:center;
 </style>
 </head>
 <body>
-<header class="no-print"><div class="hrow"><img id="headerLogo" class="logo" alt="Lorenzi Elettronica"><div class="title">Filtro Rapportini UPS<small>Seleziona e consulta le apparecchiature del rapportino originale</small></div></div></header>
+<header class="no-print"><div class="hrow"><img id="headerLogo" class="logo" alt="Lorenzi Elettronica"><div class="title">Filtro Rapportini UPS <small>V6 · HTML + PDF</small></div></div></header>
 <main>
 <section class="toolbar no-print">
  <div class="fileline"><label class="btn primary" for="file">📂 Carica rapportino HTML / PDF</label><input id="file" type="file" accept=".html,.htm,.pdf,text/html,application/pdf"><span id="filename" class="filename">Nessun file caricato</span><button class="btn" id="installBtn" type="button" style="display:none">📲 Installa app</button><button class="btn" id="clearBtn" type="button">🗑 Azzera</button></div>
@@ -76,7 +76,7 @@ function pdfLinesFromItems(items){
 }
 async function extractPdfText(file){
  const buf=await file.arrayBuffer();
- const doc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+ const doc=await pdfjsLib.getDocument({data:new Uint8Array(buf), disableWorker:true}).promise;
  const pages=[];
  for(let p=1;p<=doc.numPages;p++){
    const page=await doc.getPage(p); const tc=await page.getTextContent();

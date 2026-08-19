@@ -1,7 +1,7 @@
 {
   "name": "Filtro Rapportini UPS",
   "short_name": "Filtro UPS",
-  "description": "Seleziona e consulta le apparecchiature UPS presenti nei rapportini HTML.",
+  "description": "Seleziona e consulta le apparecchiature UPS presenti nei rapportini HTML e PDF.",
   "lang": "it-IT",
   "dir": "ltr",
   "start_url": "./",
